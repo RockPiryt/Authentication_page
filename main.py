@@ -3,7 +3,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import UserMixin, login_user, LoginManager, login_required, current_user, logout_user
 from flask_wtf import FlaskForm
-from wtforms import StringField, SubmitField
+from wtforms import StringField, SubmitField, PasswordField, EmailField
 from wtforms.validators import DataRequired
 from flask_bootstrap import Bootstrap5
 
@@ -14,6 +14,7 @@ bootstrap = Bootstrap5(app)
 app.config['SECRET_KEY'] = 'any-secret-key-you-like'  # Session
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///users.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['BOOTSTRAP_BOOTSWATCH_THEME'] = 'pulse'
 db = SQLAlchemy(app)
 app.app_context().push()
 
@@ -39,16 +40,16 @@ class User(UserMixin, db.Model):
 
 
 class RegisterForm(FlaskForm):
-    name = StringField(label="Name", validators=[DataRequired()])
-    email = StringField(label="Email", validators=[DataRequired()])
-    password = StringField(label="Password", validators=[DataRequired()])
-    submit = SubmitField(label="Sing me up")
+    name = StringField(label=" ", validators=[DataRequired()], render_kw={"placeholder":"Name"})
+    email = EmailField(label=" ", validators=[DataRequired()], render_kw={"placeholder":"Email"})
+    password = PasswordField(label=" ", validators=[DataRequired()], render_kw={"placeholder":"Password"})
+    submit = SubmitField(label="Sing up")
 
 
 class LoginForm(FlaskForm):
-    email = StringField(label="Email", validators=[DataRequired()])
-    password = StringField(label="Password", validators=[DataRequired()])
-    submit = SubmitField(label="Let me in.")
+    email = EmailField(label=" ", validators=[DataRequired()], render_kw={"placeholder":"Email"})
+    password = PasswordField(label=" ", validators=[DataRequired()], render_kw={"placeholder":"Password"})
+    submit = SubmitField(label="Log in")
 
 
 @app.route('/')
@@ -69,10 +70,15 @@ def register():
         form_email = register_form.email.data
         form_password = register_form.password.data
 
+        #Check if user exists in database
+        existing_user =  User.query.filter_by(email=form_email).first()
+        if existing_user:
+            flash("You have already signed up with that email, log in please! ")
+            return redirect(url_for("login"))
+
         # Hash and salt password
         hash_salted_password = generate_password_hash(
             password=form_password, method="pbkdf2:sha256", salt_length=8)
-        # only_password= hash_salted_password.split("$")[2]
         new_user = User(
             name=form_name,
             email=form_email,
@@ -103,28 +109,32 @@ def login():
 
         # Find user in database by email, which is unique
         user = User.query.filter_by(email=login_form_email).first()
-        print(user.password)
-        print(login_form_password)
 
-        # Check password from database against entered password
-        if check_password_hash(user.password, login_form_password):
+        #User with that email doesn't exist
+        if not user:
+            flash("That email does not exist. Please try again.")
+            return redirect(url_for("login"))
+        # Password incorrect
+        if not check_password_hash(user.password, login_form_password):
+            flash("Password incorrect. Please try again.")
+            return redirect(url_for("login"))
+        else:
             login_user(user)
             return redirect(url_for("secrets"))
+        
+        # # Check password from database against entered password
+        # if check_password_hash(user.password, login_form_password):
+        #     login_user(user)
+        #     return redirect(url_for("secrets"))
     return render_template("login_flaskform.html", html_login_form=login_form)
 
 
 @app.route('/secrets')
 @login_required
 def secrets():
-
-    # Get information from request (redirecting from register)
-    current_user_name = request.args.get("html_user_name")
-    # Search user in database using name from request
-    current_user_object = User.query.filter_by(name=current_user_name).first()
-    
-    # After login we have current_user proxy
-    name_login_current_user = current_user.name
-    return render_template("secrets.html", html_current_user_name=name_login_current_user, html_current_user_object=current_user_object)
+    '''Show file to download'''
+    flash("Logged in successfully")
+    return render_template("secrets.html", html_current_user=current_user)
 
 
 @app.route('/logout')
@@ -141,3 +151,16 @@ def download():
 
 if __name__ == "__main__":
     app.run(debug=True)
+
+
+# #------------------------Route without login_required - use request method
+# @app.route('/secrets')
+# def secrets():
+
+#     # Get information from request (redirecting from register)
+#     user_name = request.args.get("html_user_name")
+#     # Search user in database using name from request
+#     user_object = User.query.filter_by(name=user_name).first()
+#     user_object_email = user_object.email
+
+#     return render_template("secrets.html",html_object_email=user_object_email)

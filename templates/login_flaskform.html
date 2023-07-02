@@ -2,8 +2,10 @@
 {% block content %}
 {% from 'bootstrap5/form.html' import render_form %}
 
+
 <div class="box">
     <h1>Login</h1>
+    {% include "flash_message_base.html" %}
 
     {{ render_form(html_login_form) }}
 </div>
