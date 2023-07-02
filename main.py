@@ -54,7 +54,8 @@ class LoginForm(FlaskForm):
 
 @app.route('/')
 def home():
-    return render_template("index.html")
+    show =" "
+    return render_template("index.html", html_show=show)
 
 
 @app.route('/register', methods=["GET", "POST"])
@@ -91,7 +92,8 @@ def register():
         # Login user after registration
         login_user(new_user)
 
-        return redirect(url_for("secrets", html_user_name=new_user.name))
+        return redirect(url_for("secrets"))
+        # return redirect(url_for("secrets", html_user_name=new_user.name))#second method
     return render_template("register_flaskform.html", html_register_form=register_form)
 
 
@@ -134,7 +136,7 @@ def login():
 def secrets():
     '''Show file to download'''
     flash("Logged in successfully")
-    return render_template("secrets.html", html_current_user=current_user)
+    return render_template("secrets.html", html_current_user=current_user, logged_in=current_user.is_authenticated)
 
 
 @app.route('/logout')
@@ -146,7 +148,7 @@ def logout():
 @app.route('/download')
 @login_required
 def download():
-    return send_from_directory(directory='static', path='files/photo_cinema.jpg', as_attachment=True)
+    return send_from_directory(directory='static', path='files/photo_cinema.jpg', as_attachment=True, logged_in=current_user.is_authenticated)
 
 
 if __name__ == "__main__":
