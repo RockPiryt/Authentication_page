@@ -6,12 +6,14 @@ from flask_wtf import FlaskForm
 from wtforms import StringField, SubmitField, PasswordField, EmailField
 from wtforms.validators import DataRequired
 from flask_bootstrap import Bootstrap5
+import secrets
 
 
 app = Flask(__name__)
 bootstrap = Bootstrap5(app)
 
-app.config['SECRET_KEY'] = 'any-secret-key-you-like'  # Session
+
+app.config['SECRET_KEY'] = secrets.token_hex(32)# Session
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///users.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['BOOTSTRAP_BOOTSWATCH_THEME'] = 'pulse'
@@ -35,8 +37,11 @@ class User(UserMixin, db.Model):
     email = db.Column(db.String(100), unique=True)
     password = db.Column(db.String(100))
     name = db.Column(db.String(1000))
-# Line below only required once, when creating DB.
-# db.create_all()
+
+if db:
+    pass
+else:
+    db.create_all()
 
 
 class RegisterForm(FlaskForm):
