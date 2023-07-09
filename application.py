@@ -9,22 +9,23 @@ from flask_bootstrap import Bootstrap5
 import secrets
 
 
-app = Flask(__name__)
-bootstrap = Bootstrap5(app)
+application = Flask(__name__)
+bootstrap = Bootstrap5(application)
 
 
-app.config['SECRET_KEY'] = secrets.token_hex(32)# Session
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///users.db'
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['BOOTSTRAP_BOOTSWATCH_THEME'] = 'pulse'
-db = SQLAlchemy(app)
-app.app_context().push()
+application.config['SECRET_KEY'] = secrets.token_hex(32)# Session
+application.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///users.db'
+application.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+application.config['BOOTSTRAP_BOOTSWATCH_THEME'] = 'pulse'
+db = SQLAlchemy(application)
+application.app_context().push()
+
 
 
 # -------------------Flask- Login
 # Create login_manager class
 login_manager = LoginManager()
-login_manager.init_app(app)
+login_manager.init_app(application)
 
 
 @login_manager.user_loader
@@ -57,13 +58,13 @@ class LoginForm(FlaskForm):
     submit = SubmitField(label="Log in")
 
 
-@app.route('/')
+@application.route('/')
 def home():
     show =" "
     return render_template("index.html", html_show=show)
 
 
-@app.route('/register', methods=["GET", "POST"])
+@application.route('/register', methods=["GET", "POST"])
 def register():
     '''Register new users'''
 
@@ -102,7 +103,7 @@ def register():
     return render_template("register_flaskform.html", html_register_form=register_form)
 
 
-@app.route('/login', methods=["GET", "POST"])
+@application.route('/login', methods=["GET", "POST"])
 def login():
     '''Login existing users'''
 
@@ -136,7 +137,7 @@ def login():
     return render_template("login_flaskform.html", html_login_form=login_form)
 
 
-@app.route('/secrets')
+@application.route('/secrets')
 @login_required
 def secrets():
     '''Show file to download'''
@@ -144,20 +145,20 @@ def secrets():
     return render_template("secrets.html", html_current_user=current_user, logged_in=current_user.is_authenticated)
 
 
-@app.route('/logout')
+@application.route('/logout')
 def logout():
     logout_user()
     return redirect(url_for("home"))
 
 
-@app.route('/download')
+@application.route('/download')
 @login_required
 def download():
     return send_from_directory(directory='static', path='files/photo_cinema.jpg', as_attachment=True, logged_in=current_user.is_authenticated)
 
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    application.run(debug=True)
 
 
 # #------------------------Route without login_required - use request method
