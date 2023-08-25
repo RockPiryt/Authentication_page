@@ -14,8 +14,8 @@ from werkzeug.utils import secure_filename
 
 
 # #------------------Upload files settings
-# UPLOAD_FOLDER = '/path/to/the/uploads'
-# ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
+UPLOAD_FOLDER = '/static/files/user_files/'
+# ALLOWED_EXTENSIONS = 'png', 'jpg', 'jpeg'
 
 #------------------Application settings
 application = Flask(__name__)
@@ -24,7 +24,7 @@ application.config['SECRET_KEY'] = secrets.token_hex(32)# Session
 application.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///users.db'
 application.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 application.config['BOOTSTRAP_BOOTSWATCH_THEME'] = 'pulse'
-# application.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+application.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 application.config['MAX_CONTENT_LENGTH'] = 16 * 1000 * 1000#max file size 16mb
 
 bootstrap = Bootstrap5(application)
@@ -48,6 +48,13 @@ class User(UserMixin, db.Model):
     password = db.Column(db.String(100))
     name = db.Column(db.String(1000))
 
+# # Save file in db
+# class Upload(db.Model):
+#     id = db.Column(db.Integer, primary_key=True)
+#     filename = db.Column(db.String(200))
+#     data =db.Column(db.LArgeBinary)
+
+
 if db:
     pass
 else:
@@ -67,7 +74,7 @@ class LoginForm(FlaskForm):
     submit = SubmitField(label="Log in")
 
 class UploadForm(FlaskForm):
-    photo = FileField(label='User Photo', validators=[FileRequired(), FileAllowed(['jpg', 'png', 'jpeg'], 'Images only!')])
+    photo = FileField(label='User Photo', validators=[FileRequired(), FileAllowed(['png', 'jpg', 'jpeg'], 'Images only!')])
     submit = SubmitField(label="Upload photo")
 
 
@@ -175,19 +182,48 @@ def upload_photo():
     '''Upload user photo'''
 
     upload_form = UploadForm()
-    # Get file from upload_form
     if upload_form.validate_on_submit():
-        user_file = secure_filename(upload_form.photo.data.filename)
-        upload_form.photo.data.save('static/files/upload/' + user_file)
+        # Get file from upload_form
+        user_file = upload_form.photo.data
+        # Secure filename
+        secure_user_file = secure_filename(user_file.filename)
+        #Save file
+        basedir = os.path.abspath(os.path.dirname(__file__))#app folder
+        # new_basedir = basedir.replace('\\', '/')
+        # # print(basedir)
+        filedir = os.path.join(basedir + application.config['UPLOAD_FOLDER'], secure_user_file)#file folder+ file to save
+        user_file.save(filedir)
+        # user_file.save('static/files/upload/' + secure_user_file)
+        
         flash('Photo uploaded successfully.')
-        return redirect(url_for('upload_photo'))
+        img = application.config['UPLOAD_FOLDER']+ secure_user_file
+        return render_template("upload_photo.html", img=img, html_upload_form=upload_form)
+        # return redirect(url_for('static', filename='files/user_files/' + user_file.filename), code=301)# To see uploaded img
     return render_template("upload_photo.html", html_upload_form=upload_form)
 
 
+@application.route('/display/<filedir>')
+def display_image(filedir):
+	#print('display_image filename: ' + filename)
+	return render_template()
 
 
 if __name__ == "__main__":
     application.run(debug=True)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 # #------------------------Route without login_required - use request method

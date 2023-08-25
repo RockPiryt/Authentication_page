@@ -12,9 +12,28 @@
 
     <form method="post" enctype="multipart/form-data">
         {{ html_upload_form.hidden_tag() }}
+
         {{ html_upload_form.photo }}
+            {% if html_upload_form.photo.errors %}
+                <ul class="errors">
+                {% for error in html_upload_form.photo.errors %}
+                    <li>{{ error }}</li>
+                {% endfor %}
+                </ul>
+            {% endif %}
+
         {{ html_upload_form.submit(class_="btn-light") }}
     </form>
 
-
+    {% if img %}
+    <h1>Your image</h1>
+    <p class="text_center">
+        <img src="{{img}}" width="300px">
+    </p>
+    {% else %}
+    <h1>Image will be render here...</h1>
+    {% endif %}
+    
+    
 {% endblock %}
+    <img src="{{img}}">
