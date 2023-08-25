@@ -3,24 +3,33 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import UserMixin, login_user, LoginManager, login_required, current_user, logout_user
 from flask_wtf import FlaskForm
-from wtforms import StringField, SubmitField, PasswordField, EmailField
+from wtforms import StringField, SubmitField, PasswordField, EmailField, FileField
 from wtforms.validators import DataRequired
 from flask_bootstrap import Bootstrap5
 import secrets
 
+from flask_wtf.file import FileField, FileRequired, FileAllowed
+import os
+from werkzeug.utils import secure_filename
 
+
+# #------------------Upload files settings
+# UPLOAD_FOLDER = '/path/to/the/uploads'
+# ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
+
+#------------------Application settings
 application = Flask(__name__)
-bootstrap = Bootstrap5(application)
-
 
 application.config['SECRET_KEY'] = secrets.token_hex(32)# Session
 application.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///users.db'
 application.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 application.config['BOOTSTRAP_BOOTSWATCH_THEME'] = 'pulse'
+# application.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+application.config['MAX_CONTENT_LENGTH'] = 16 * 1000 * 1000#max file size 16mb
+
+bootstrap = Bootstrap5(application)
 db = SQLAlchemy(application)
 application.app_context().push()
-
-
 
 # -------------------Flask- Login
 # Create login_manager class
@@ -56,6 +65,10 @@ class LoginForm(FlaskForm):
     email = EmailField(label=" ", validators=[DataRequired()], render_kw={"placeholder":"Email"})
     password = PasswordField(label=" ", validators=[DataRequired()], render_kw={"placeholder":"Password"})
     submit = SubmitField(label="Log in")
+
+class UploadForm(FlaskForm):
+    photo = FileField(label='User Photo', validators=[FileRequired(), FileAllowed(['jpg', 'png', 'jpeg'], 'Images only!')])
+    submit = SubmitField(label="Upload photo")
 
 
 @application.route('/')
@@ -154,11 +167,27 @@ def logout():
 @application.route('/download')
 @login_required
 def download():
-    return send_from_directory(directory='static', path='files/photo_cinema.jpg', as_attachment=True, logged_in=current_user.is_authenticated)
+    return send_from_directory(directory='static', path='files/download/photo_cinema.jpg', as_attachment=True)
+
+@application.route('/upload-photo', methods=["GET", "POST"])
+@login_required
+def upload_photo():
+    '''Upload user photo'''
+
+    upload_form = UploadForm()
+    # Get file from upload_form
+    if upload_form.validate_on_submit():
+        user_file = secure_filename(upload_form.photo.data.filename)
+        upload_form.photo.data.save('static/files/upload/' + user_file)
+        flash('Photo uploaded successfully.')
+        return redirect(url_for('upload_photo'))
+    return render_template("upload_photo.html", html_upload_form=upload_form)
+
+
 
 
 if __name__ == "__main__":
-    application.run(debug=False)
+    application.run(debug=True)
 
 
 # #------------------------Route without login_required - use request method

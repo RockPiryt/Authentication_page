@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% from 'bootstrap5/form.html' import render_form %}
+
+
+{% block content %}
+
+<div class="box">
+	<h1>Upload</h1>
+    {% include "flash_message_base.html" %}
+
+    <!-- {{ render_form(html_upload_form) }} -->
+
+    <form method="post" enctype="multipart/form-data">
+        {{ html_upload_form.hidden_tag() }}
+        {{ html_upload_form.photo }}
+        {{ html_upload_form.submit(class_="btn-light") }}
+    </form>
+
+
+{% endblock %}
